@@ -1,8 +1,11 @@
+// pages/index.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 
 export default function Intro() {
   const router = useRouter();
+
+  // Avatar + glasses compose state
   const [handle, setHandle] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [composedUrl, setComposedUrl] = useState("");
@@ -28,7 +31,7 @@ export default function Intro() {
   const fetchAvatar = async () => {
     const h = handle.trim().replace(/^@+/, "");
     if (!h) {
-      alert("X kullanıcı adını @ olmadan gir.");
+      alert("Enter the X username without @.");
       return;
     }
     const url = `/api/avatar?handle=${encodeURIComponent(h)}`;
@@ -38,21 +41,24 @@ export default function Intro() {
 
   const composeAvatar = async (src?: string, gsrc?: string) => {
     const size = 256;
+
+    // Base avatar image
     const base = new Image();
     base.crossOrigin = "anonymous";
     base.src = src || avatarUrl;
-    await new Promise((ok, err) => {
-      base.onload = ok;
-      base.onerror = err;
+    await new Promise<void>((ok, err) => {
+      base.onload = () => ok();
+      base.onerror = () => err(new Error("avatar load error"));
     });
 
+    // Canvas
     const c = document.createElement("canvas");
     c.width = size;
     c.height = size;
     const ctx = c.getContext("2d")!;
     ctx.clearRect(0, 0, size, size);
 
-    // avatar: daire maske
+    // Circle mask
     ctx.save();
     ctx.beginPath();
     ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
@@ -61,36 +67,37 @@ export default function Intro() {
     ctx.drawImage(base, 0, 0, size, size);
     ctx.restore();
 
-    // dış halka
+    // Ring
     ctx.strokeStyle = "rgba(255,255,255,.9)";
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.arc(size / 2, size / 2, size / 2 - 3, 0, Math.PI * 2);
     ctx.stroke();
 
-    // gözlük bindirme
+    // Glasses overlay
     const g = new Image();
     g.crossOrigin = "anonymous";
     g.src = gsrc || glassesUrl;
     try {
-      await new Promise((ok, err) => {
-        g.onload = ok;
-        g.onerror = err;
+      await new Promise<void>((ok, err) => {
+        g.onload = () => ok();
+        g.onerror = () => err(new Error("glasses load error"));
       });
       ctx.save();
       ctx.translate(size / 2 + offX, size * 0.48 + offY);
       ctx.rotate((rotate * Math.PI) / 180);
-      const W = 170 * scale,
-        H = 100 * scale;
+      const W = 170 * scale;
+      const H = 100 * scale;
       ctx.drawImage(g, -W / 2, -H / 2, W, H);
       ctx.restore();
     } catch {
-      // fallback çizmeye gerek yok
+      // optional fallback: skip drawing if not found
     }
 
     setComposedUrl(c.toDataURL("image/png"));
   };
 
+  // Re-compose when sliders change
   useEffect(() => {
     if (avatarUrl) composeAvatar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -98,7 +105,7 @@ export default function Intro() {
 
   const startGame = () => {
     if (!composedUrl) {
-      alert("Önce avatarı yükle/çek ve gözlüğü hizala.");
+      alert("Create your avatar first.");
       return;
     }
     localStorage.setItem("hero_composed", composedUrl);
@@ -132,12 +139,12 @@ export default function Intro() {
 
         <div className="rounded-[28px] border border-white/20 bg-white/5 p-4 shadow-[0_0_80px_#7c3aed55]">
           <p className="text-sm text-white/70 mb-4">
-            X avatarını al, <b>Billions</b> gözlüğünü hizala; sonra{" "}
+            Get your X avatar, align the <b>Billions</b> glasses, then press{" "}
             <b>Start</b>.
           </p>
 
           <div className="grid lg:grid-cols-2 gap-4">
-            {/* Önizleme + Download */}
+            {/* Preview + Download */}
             <div className="flex flex-col items-center gap-3">
               <div
                 className="w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden border border-white/30 shadow-[0_10px_40px_rgba(255,255,255,.25)]"
@@ -153,13 +160,13 @@ export default function Intro() {
                 onClick={downloadAvatar}
                 disabled={!composedUrl}
                 className="px-3 py-2 rounded-2xl bg-white text-black font-semibold disabled:opacity-40"
-                title={!composedUrl ? "Önce avatarı oluştur" : "Download avatar"}
+                title={!composedUrl ? "Create your avatar first" : "Download avatar"}
               >
                 Download Avatar
               </button>
             </div>
 
-            {/* Kontroller (Upload kaldırıldı) */}
+            {/* Controls (Upload removed) */}
             <div className="grid gap-3">
               <div className="grid md:grid-cols-3 gap-2 items-end">
                 <div className="md:col-span-2">
@@ -231,8 +238,7 @@ export default function Intro() {
         </div>
 
         <footer className="mt-4 text-xs text-white/60 text-center">
-          Fan-made demo • Tag <b>@billions_ntwk</b> • by{" "}
-          <b>@traderibo123</b>
+          Fan-made demo • Tag <b>@billions_ntwk</b> • by <b>@traderibo123</b>
         </footer>
       </div>
     </div>
