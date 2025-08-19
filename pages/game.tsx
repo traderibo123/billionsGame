@@ -59,7 +59,6 @@ export default function Game() {
   useEffect(()=>void(xRef.current=x), [x]);
   useEffect(()=>void(comboRef.current=combo), [combo]);
 
-  // Intro'da kaydedilen avatarı yükle
   useEffect(() => {
     if (typeof window !== "undefined") {
       const img = localStorage.getItem("hero_composed");
@@ -83,7 +82,6 @@ export default function Game() {
     }
   };
 
-  // Oyun döngüsü
   useEffect(() => {
     if (!running) return;
 
@@ -126,7 +124,6 @@ export default function Game() {
       floatiesRef.current.forEach(f => { f.y-=0.25*dt; f.life-=dt; });
       floatiesRef.current = floatiesRef.current.filter(f => f.life>0);
 
-      // çarpışma
       const PY = 0.88; const caught:number[] = [];
       for (const d of dropsRef.current) {
         if (Math.abs(d.y-PY)<0.04 && Math.abs(d.x-nx)<0.08) {
@@ -163,7 +160,7 @@ export default function Game() {
     return () => { window.removeEventListener("keydown", kd); window.removeEventListener("keyup", ku); cancelAnimationFrame(raf); last.current=null; };
   }, [running]);
 
-  const start = () => { // sayfaya girince ya da Restart’ta çağrılır
+  const start = () => {
     setTimeLeft(60); setPower(0); setLives(3); setCombo(0);
     timeRef.current=60; powerRef.current=0; livesRef.current=3; comboRef.current=0; xRef.current=0.5; setX(0.5);
     dropsRef.current=[]; floatiesRef.current=[]; particlesRef.current=[];
@@ -171,12 +168,14 @@ export default function Game() {
   };
 
   const shareOnX = () => {
-    const text = encodeURIComponent(`I scored ${powerRef.current} POWER in Billions Neon! @billions_ntwk @traderibo123`);
+    const text = encodeURIComponent(`I scored ${powerRef.current} POWER in Billions Game! @billions_ntwk @traderibo123`);
     const url  = typeof window !== "undefined" ? encodeURIComponent(window.location.href) : "";
     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank");
   };
 
-  useEffect(()=>{ start(); }, []); // sayfa açılınca otomatik başlat
+  useEffect(()=>{ start(); }, []);
+
+  const gameOver = !running && (timeLeft<=0 || lives<=0);
 
   return (
     <div className="min-h-screen w-full bg-black text-white flex items-center justify-center p-4 select-none">
@@ -186,7 +185,7 @@ export default function Game() {
           <div className="flex items-center gap-3">
             <Logo />
             <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Billions Neon — Avatar Game</h1>
+              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Billions Game</h1>
               <p className="text-xs md:text-sm text-white/70 -mt-1">by <b>@traderibo123</b></p>
             </div>
           </div>
@@ -240,26 +239,28 @@ export default function Game() {
             <div key={p.id} className="absolute -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white/80"
                  style={{ left: `${p.x*100}%`, top: `${p.y*100}%`, opacity: Math.max(0, Math.min(1, p.life)) }} />
           ))}
+
+          {/* GAME OVER OVERLAY — oyun alanının ÜSTÜNDE */}
+          {gameOver && (
+            <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px] flex items-center justify-center p-4">
+              <div className="rounded-[24px] border border-white/20 bg-white/10 p-6 text-center shadow-[0_0_60px_rgba(255,255,255,.2)] max-w-md w-full">
+                <h2 className="text-3xl font-extrabold mb-1">Run Complete</h2>
+                <div className="text-xs text-white/70 mb-2">by <b>@traderibo123</b></div>
+                <div className="text-sm text-white/80">Total POWER</div>
+                <div className="text-5xl font-black my-2">{power}</div>
+                <div className="text-xs text-white/60 mb-4">Best: <b>{best}</b></div>
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <button onClick={shareOnX} className="px-4 py-2 rounded-2xl bg-white text-black font-semibold">Share on X</button>
+                  <button onClick={start} className="px-4 py-2 rounded-2xl bg-white/10 border border-white/20 font-semibold">Play again</button>
+                  <button onClick={()=>router.push("/")} className="px-4 py-2 rounded-2xl bg-white/10 border border-white/20 font-semibold">Back to Intro</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Game Over (basit durum: running=false && (süre bitti || can 0)) */}
-        {!running && (timeLeft<=0 || lives<=0) && (
-          <div className="mt-4 rounded-[28px] border border-white/20 bg-white/5 p-6 text-center shadow-[0_0_80px_#22c55e55]">
-            <h2 className="text-3xl font-extrabold mb-1">Run Complete</h2>
-            <div className="text-xs text-white/70 mb-2">by <b>@traderibo123</b></div>
-            <div className="text-sm text-white/80">Total POWER</div>
-            <div className="text-5xl font-black my-2">{power}</div>
-            <div className="text-xs text-white/60 mb-4">Best: <b>{best}</b></div>
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              <button onClick={shareOnX} className="px-4 py-2 rounded-2xl bg-white text-black font-semibold">Share on X</button>
-              <button onClick={start} className="px-4 py-2 rounded-2xl bg-white/10 border border-white/20 font-semibold">Play again</button>
-              <button onClick={()=>router.push("/")} className="px-4 py-2 rounded-2xl bg-white/10 border border-white/20 font-semibold">Back to Intro</button>
-            </div>
-          </div>
-        )}
-
         <footer className="mt-4 text-xs text-white/60 text-center">
-          Fan-made visual demo • Tag <b>@billions_ntwk</b> • by <b>@traderibo123</b>
+          Fan-made demo • Tag <b>@billions_ntwk</b> • by <b>@traderibo123</b>
         </footer>
       </div>
     </div>
@@ -287,7 +288,7 @@ function HUD({ label, value }:{ label:string; value:string }) {
   );
 }
 
-/* Eğer globals.css'te yoksa, bu animasyonu oraya ekle:
+/* globals.css içinde yoksa ekleyin:
 @keyframes wobble { 0%{ transform: translateY(0) rotate(0deg);} 50%{ transform: translateY(-4px) rotate(1deg);} 100%{ transform: translateY(0) rotate(0deg);} }
 .animate-wobble{ animation: wobble 1.6s ease-in-out infinite; }
 */
